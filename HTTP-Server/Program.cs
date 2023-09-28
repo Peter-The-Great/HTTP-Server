@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Collections.Generic;
+using System.Web;
 
 namespace Pretpark
 {
@@ -42,9 +39,10 @@ namespace Pretpark
                         // Home Page
                         string response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n";
                         response += "<html><body>";
+                        response += "<h1>Welkom bij de website van PretPark <a href='https://nl.wikipedia.org/wiki/Den_Haag'>Den Haag</a></h1>";    
                         response += "<a href='/contact'>Contact</a><br>";
                         response += "<a href='/teller'>Teller</a><br>";
-                        response += "<a href='/add?a=3&b=4'>Add</a><br>";
+                        response += "<a href='/add?a=3&b=7'>Add</a><br>";
                         response += "<a href='/mijnteller'>Mijn Teller</a><br>";
                         response += "</body></html>";
                         writer.Write(response);
@@ -78,6 +76,9 @@ namespace Pretpark
                         {
                             string[] paramPairs = queryParams[1].Split('&');
                             int sum = 0;
+                            int minus = 0;
+                            int multible = 1;
+                            int divide = 1;
                             foreach (string paramPair in paramPairs)
                             {
                                 string[] keyValue = paramPair.Split('=');
@@ -86,12 +87,18 @@ namespace Pretpark
                                     if (int.TryParse(keyValue[1], out int value))
                                     {
                                         sum += value;
+                                        minus -= value;
+                                        multible *= value;
+                                        divide /= value;
                                     }
                                 }
                             }
                             string response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n";
                             response += "<html><body>";
-                            response += "De som is: " + sum;
+                            response += "De som is: " + sum + "<br>";
+                            response += "De som is: " + minus + "<br>";
+                            response += "De som is: " + multible + "<br>";
+                            response += "De som is: " + divide + "<br>";
                             response += "</body></html>";
                             writer.Write(response);
                         }
@@ -99,18 +106,20 @@ namespace Pretpark
                     else if (url == "/mijnteller")
                     {
                         // Mijn Teller Page (gebruiker specifiek)
-                        string? user = connection.RemoteEndPoint?.ToString();
-                        if (!userCounters.ContainsKey(user))
+                        // Teller met queryparameter (per gebruiker)
+                        string[] queryParams = url.Split('?');
+                        var query = HttpUtility.ParseQueryString(url);
+                        int teller = 0; // Standaardwaarde als "teller" ontbreekt
+                        if (query["teller"] != null)
                         {
-                            userCounters[user] = 0;
+                            teller = int.Parse(query["teller"]);
                         }
-                        userCounters[user]++;
-                        string response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n";
-                        response += "<html><body>";
-                        response += "De teller staat op: " + userCounters[user] + "<br>";
-                        response += "<a href='/mijnteller?increment=1'>Klik hier om te verhogen</a>";
-                        response += "</body></html>";
-                        writer.Write(response);
+                        teller++; // Verhoog de teller
+
+                        string link = $"<a href=\"/mijnteller?teller={teller}\">klik hier om te verhogen</a>";
+                        string responseBody = $"<html><body>De teller staat op {teller}, {link}</body></html>";
+                        writer.Write("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n" + responseBody);
+
                     }
                     else
                     {
